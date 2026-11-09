@@ -1,0 +1,401 @@
+<main class="shell">
+  <!-- Hero / Header -->
+  <header class="hero">
+    <div class="hero-content">
+      <div class="badge-cluster">
+        <span class="eyebrow-badge">ENTERPRISE INTEGRATION LAB</span>
+        <!-- <span class="devextreme-badge">DevExtreme UI</span> -->
+      </div>
+      <h1>SOAP <span>vs</span> REST</h1>
+      <p class="subtitle">One incident system · Two communication protocols · Shared SQL Server database</p>
+    </div>
+    <!-- <div class="hero-status">
+      <div class="status-pill">
+        <i class="pulse-dot"></i>
+        <span>LOCAL DEMO ONLINE</span>
+      </div>
+    </div> -->
+  </header>
+
+  <!-- Protocol Switcher Section -->
+  <section class="protocol-section">
+    <div class="protocol-cards">
+      <div 
+        class="protocol-card" 
+        [class.selected]="protocol === 'REST'"
+        (click)="setProtocol('REST')">
+        <div class="protocol-icon-wrap">
+          <i class="dx-icon-globe"></i>
+        </div>
+        <div class="protocol-meta">
+          <div class="protocol-header">
+            <h3>REST Protocol</h3>
+            <span class="protocol-tag rest" *ngIf="protocol === 'REST'">ACTIVE</span>
+          </div>
+          <p>JSON payloads · HTTP resources · Lightweight & universal web standard</p>
+        </div>
+      </div>
+
+      <div 
+        class="protocol-card" 
+        [class.selected]="protocol === 'SOAP'"
+        (click)="setProtocol('SOAP')">
+        <div class="protocol-icon-wrap">
+          <i class="dx-icon-doc"></i>
+        </div>
+        <div class="protocol-meta">
+          <div class="protocol-header">
+            <h3>SOAP Protocol</h3>
+            <span class="protocol-tag soap" *ngIf="protocol === 'SOAP'">ACTIVE</span>
+          </div>
+          <p>XML envelope · WSDL contract · Enterprise standards & strict typing</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Endpoint Info Bar -->
+    <div class="endpoint-bar">
+      <div class="endpoint-indicator">
+        <span class="endpoint-chip">ACTIVE ENDPOINT</span>
+        <code class="endpoint-url">{{ protocol === 'REST' ? '/api/incidents' : '/soap/IncidentService' }}</code>
+      </div>
+      <div class="endpoint-actions">
+        <span class="endpoint-format">{{ protocol === 'REST' ? 'Content-Type: application/json' : 'Content-Type: text/xml' }}</span>
+        <a 
+          *ngIf="protocol === 'SOAP'" 
+          href="/soap/IncidentService?wsdl" 
+          target="_blank" 
+          class="wsdl-link">
+          <i class="dx-icon-export"></i> View WSDL Contract ↗
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Two-Column Interactive Workbench -->
+  <div class="workbench-grid">
+    <!-- Panel 1: Create Incident with DevExtreme Editors -->
+    <section class="card panel-form">
+      <div class="card-header">
+        <div>
+          <span class="step-label">01 / DISPATCH</span>
+          <h2>Create Incident</h2>
+        </div>
+        <span class="method-tag">{{ protocol === 'REST' ? 'HTTP POST' : 'SOAP ACTION' }}</span>
+      </div>
+
+      <div class="form-body">
+        <div class="field-group">
+          <label class="field-label">Incident Title <span class="required-star">*</span></label>
+          <dx-text-box
+            [(value)]="form.title"
+            [maxLength]="160"
+            placeholder="e.g. Employee cannot connect to corporate VPN">
+          </dx-text-box>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Description <span class="required-star">*</span></label>
+          <dx-text-area
+            [(value)]="form.description"
+            [height]="85"
+            [maxLength]="2000"
+            placeholder="Provide context, error codes, and symptoms...">
+          </dx-text-area>
+        </div>
+
+        <div class="two-col-fields">
+          <div class="field-group">
+            <label class="field-label">Priority</label>
+            <dx-select-box
+              [items]="priorities"
+              [(value)]="form.priority"
+              placeholder="Select priority">
+            </dx-select-box>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Status</label>
+            <dx-select-box
+              [items]="statuses"
+              [(value)]="form.status"
+              placeholder="Select status">
+            </dx-select-box>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Assigned Support Group <span class="required-star">*</span></label>
+          <dx-text-box
+            [(value)]="form.assignedGroup"
+            [maxLength]="100"
+            placeholder="e.g. IT SUPPORT, WORKPLACE SUPPORT">
+          </dx-text-box>
+        </div>
+
+        <div class="form-actions">
+          <dx-button
+            [text]="'Send ' + protocol + ' Request'"
+            type="default"
+            stylingMode="contained"
+            [icon]="protocol === 'REST' ? 'upload' : 'send'"
+            [disabled]="loading"
+            (onClick)="create()">
+          </dx-button>
+          <dx-button
+            text="Reset"
+            stylingMode="outlined"
+            icon="revert"
+            [disabled]="loading"
+            (onClick)="resetForm()">
+          </dx-button>
+        </div>
+
+        <div class="banner-notice" *ngIf="message">
+          <i class="dx-icon-check"></i>
+          <span>{{ message }}</span>
+        </div>
+        <div class="banner-error" *ngIf="error">
+          <i class="dx-icon-warning"></i>
+          <span>{{ error }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 2: Wire Payload Inspector -->
+    <section class="card panel-wire">
+      <div class="card-header">
+        <div>
+          <span class="step-label">02 / WIRE INSPECTOR</span>
+          <h2>Network Payload</h2>
+        </div>
+        <span class="format-tag">{{ protocol === 'REST' ? 'JSON SCHEMA' : 'XML ENVELOPE' }}</span>
+      </div>
+
+      <div class="wire-tabs-bar">
+        <div class="tab-buttons">
+          <button 
+            type="button" 
+            class="tab-btn" 
+            [class.active]="activeTab === 'request'" 
+            (click)="activeTab = 'request'">
+            Last Request
+          </button>
+          <button 
+            type="button" 
+            class="tab-btn" 
+            [class.active]="activeTab === 'response'" 
+            (click)="activeTab = 'response'">
+            Last Response
+          </button>
+        </div>
+
+        <dx-button
+          icon="copy"
+          text="Copy"
+          stylingMode="text"
+          hint="Copy payload to clipboard"
+          (onClick)="copyPayload()">
+        </dx-button>
+      </div>
+
+      <div class="code-viewport">
+        <div *ngIf="activeTab === 'request'">
+          <div class="viewport-meta">
+            <span>REQUEST WIRE BUFFER</span>
+            <span class="payload-length">{{ (lastPayload || '').length }} chars</span>
+          </div>
+          <pre><code>{{ lastPayload || 'Submit the form to dispatch a request payload...' }}</code></pre>
+        </div>
+
+        <div *ngIf="activeTab === 'response'">
+          <div class="viewport-meta">
+            <span>RESPONSE STREAM BUFFER</span>
+            <span class="payload-length">{{ (lastResponse || '').length }} chars</span>
+          </div>
+          <pre><code>{{ lastResponse || 'Server response envelope or record data will appear here...' }}</code></pre>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Panel 3: DevExtreme DataGrid Incident Records -->
+  <section class="card panel-records">
+    <div class="card-header records-header">
+      <div>
+        <span class="step-label">03 / SHARED DATABASE STORAGE</span>
+        <h2>Enterprise Incident Records</h2>
+        <p class="section-subtext">Interactive DevExtreme DataGrid: sort, filter, group by column header, and inspect records created across REST & SOAP.</p>
+      </div>
+      <div class="records-summary">
+        <span class="total-badge">{{ incidents.length }} Incident(s)</span>
+      </div>
+    </div>
+
+    <!-- DevExtreme DataGrid -->
+    <dx-data-grid
+      id="incidentsGrid"
+      [dataSource]="incidents"
+      keyExpr="id"
+      [showBorders]="true"
+      [showRowLines]="true"
+      [rowAlternationEnabled]="true"
+      [hoverStateEnabled]="true"
+      [columnAutoWidth]="true"
+      (onRowClick)="onRowClick($event)">
+
+      <!-- Filtering & Search Features -->
+      <dxo-search-panel
+        [visible]="true"
+        [highlightCaseSensitive]="false"
+        placeholder="Search incidents...">
+      </dxo-search-panel>
+      <dxo-filter-row [visible]="true"></dxo-filter-row>
+      <dxo-header-filter [visible]="true"></dxo-header-filter>
+
+      <!-- Grouping -->
+      <dxo-group-panel
+        [visible]="true"
+        emptyPanelText="Drag a column header here to group incidents (e.g. by Priority or Status)">
+      </dxo-group-panel>
+      <dxo-grouping [autoExpandAll]="false"></dxo-grouping>
+
+      <!-- Paging -->
+      <dxo-paging [pageSize]="10"></dxo-paging>
+      <dxo-pager
+        [visible]="true"
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[5, 10, 20, 50]"
+        [showInfo]="true"
+        [showNavigationButtons]="true">
+      </dxo-pager>
+
+      <!-- Sorting -->
+      <dxo-sorting mode="multiple"></dxo-sorting>
+
+      <!-- Column Chooser -->
+      <dxo-column-chooser [enabled]="true" mode="select"></dxo-column-chooser>
+
+      <!-- Custom Toolbar Configuration -->
+      <dxo-toolbar>
+        <dxi-item name="groupPanel"></dxi-item>
+        <dxi-item location="before">
+          <dx-button
+            [text]="'Refresh via ' + protocol"
+            icon="refresh"
+            type="default"
+            stylingMode="contained"
+            [disabled]="loading"
+            (onClick)="load(protocol)">
+          </dx-button>
+        </dxi-item>
+        <dxi-item location="before">
+          <dx-button
+            text="Reset Filters"
+            icon="clear"
+            stylingMode="outlined"
+            (onClick)="clearGridFilters()">
+          </dx-button>
+        </dxi-item>
+        <dxi-item name="columnChooserButton"></dxi-item>
+        <dxi-item name="searchPanel"></dxi-item>
+      </dxo-toolbar>
+
+      <!-- Columns Definition -->
+      <dxi-column
+        dataField="id"
+        caption="ID"
+        [width]="90"
+        alignment="center"
+        sortOrder="desc"
+        [sortIndex]="0"
+        cellTemplate="idTemplate">
+      </dxi-column>
+
+      <dxi-column
+        dataField="title"
+        caption="Incident Title"
+        [minWidth]="220">
+      </dxi-column>
+
+      <dxi-column
+        dataField="priority"
+        caption="Priority"
+        [width]="130"
+        alignment="center"
+        cellTemplate="priorityTemplate">
+      </dxi-column>
+
+      <dxi-column
+        dataField="status"
+        caption="Status"
+        [width]="140"
+        alignment="center"
+        cellTemplate="statusTemplate">
+      </dxi-column>
+
+      <dxi-column
+        dataField="assignedGroup"
+        caption="Assigned Group"
+        [width]="170">
+      </dxi-column>
+
+      <dxi-column
+        dataField="createdAt"
+        caption="Created At"
+        [width]="170"
+        dataType="string">
+      </dxi-column>
+
+      <dxi-column
+        caption="Inspect"
+        [width]="95"
+        alignment="center"
+        [allowFiltering]="false"
+        [allowSorting]="false"
+        cellTemplate="actionsTemplate">
+      </dxi-column>
+
+      <!-- Custom Templates -->
+      <div *dxTemplate="let cell of 'idTemplate'">
+        <span class="mono-id">#{{ cell.value }}</span>
+      </div>
+
+      <div *dxTemplate="let cell of 'priorityTemplate'">
+        <span 
+          class="priority-badge" 
+          [class.p-critical]="cell.value === 'CRITICAL'"
+          [class.p-high]="cell.value === 'HIGH'"
+          [class.p-medium]="cell.value === 'MEDIUM'"
+          [class.p-low]="cell.value === 'LOW'">
+          {{ cell.value }}
+        </span>
+      </div>
+
+      <div *dxTemplate="let cell of 'statusTemplate'">
+        <span 
+          class="status-badge"
+          [class.s-open]="cell.value === 'OPEN'"
+          [class.s-progress]="cell.value === 'IN_PROGRESS'"
+          [class.s-resolved]="cell.value === 'RESOLVED'">
+          {{ cell.value === 'IN_PROGRESS' ? 'IN PROGRESS' : cell.value }}
+        </span>
+      </div>
+
+      <div *dxTemplate="let cell of 'actionsTemplate'">
+        <dx-button
+          icon="find"
+          hint="Inspect this record in Wire Inspector"
+          stylingMode="text"
+          (onClick)="inspectIncident(cell.data, $event)">
+        </dx-button>
+      </div>
+
+    </dx-data-grid>
+  </section>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <p>Powered by DevExtreme UI · Angular 19 · Spring Boot · Apache CXF SOAP · SQL Server 2022</p>
+  </footer>
+</main>
